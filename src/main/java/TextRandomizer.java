@@ -1,4 +1,4 @@
-package edu.radamus.samples.text2text;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,16 +17,18 @@ public class TextRandomizer {
 		word2Conseq = buildWordMap(words);
 	}
 
-	public String createRandomizedText() {
+	public String createRandomizedTextIteratively() {
 
-		return randomize(words[0]);
+		return randomizeIterative(words[0], new StringBuilder(), new Random());
 	}
 
 	private String createRandomizedTextRecurrently() {
-		return randomizeRecurrent(words[0], new StringBuilder(), new Random());
+		return randomizeRecurrent(words[0], new StringBuilder(), new Random(), 0);
 	}
-	
+
 	/**
+	 * Split text into words
+	 * 
 	 * @param text
 	 * @return
 	 */
@@ -35,23 +37,25 @@ public class TextRandomizer {
 	}
 
 	/**
+	 * Build a map of unique words where values are lists of subsequent words
+	 * 
 	 * @param words
 	 * @return
 	 */
 	private Map<String, List<String>> buildWordMap(String[] words) {
-		Map<String, List<String>> word2Conseq = new HashMap<String, List<String>>();
+		Map<String, List<String>> uniqueWords2Followers = new HashMap<String, List<String>>();
 		for (int i = 0; i < words.length; i++) {
 			String word = words[i];
-			List<String> conseq = word2Conseq.get(word);
+			List<String> conseq = uniqueWords2Followers.get(word);
 			if (conseq == null) {
 				conseq = new ArrayList<String>();
-				word2Conseq.put(word, conseq);
+				uniqueWords2Followers.put(word, conseq);
 			}
 			if (i < words.length - 1) {
 				conseq.add(words[i + 1]);
 			}
 		}
-		return word2Conseq;
+		return uniqueWords2Followers;
 	}
 
 	/**
@@ -60,18 +64,19 @@ public class TextRandomizer {
 	 * @return string build from random pick of one of the directly subsequent
 	 *         words of a given word
 	 */
-	private String randomize(String startWord) {
-		StringBuilder builder = new StringBuilder();
+	private String randomizeIterative(String startWord, StringBuilder builder,
+			Random rand) {
 		String randomWord = startWord;
-		List<String> nextVector = word2Conseq.get(startWord);
-		
-		while (nextVector.size() != 0) {
-			Random rand = new Random();
-			int index = rand.nextInt(nextVector.size());
-			randomWord = nextVector.get(index);
-			builder.append(randomWord);
-			builder.append(" ");
+		List<String> nextVector;
+
+		for(int i = 0; i < words.length; i++){
 			nextVector = word2Conseq.get(randomWord);
+			if(nextVector.size() == 0){
+				continue;
+			}
+			randomWord = pickNextWord(nextVector, rand);
+			builder.append(randomWord).append(" ");
+			
 		}
 
 		return builder.toString().trim();
@@ -79,32 +84,41 @@ public class TextRandomizer {
 
 	/**
 	 * Recurrent version of the randomizer
+	 * 
 	 * @param word
 	 *            - the word to start from
 	 * @return string build from random pick of one of the directly subsequent
 	 *         words of a given word
 	 */
-	private String randomizeRecurrent(String word, StringBuilder builder, Random rand) {
-		List<String> nextVector = word2Conseq.get(word);
-		if (nextVector.size() == 0) {
-			return builder.toString().trim();
-		} else {			
-			int index = rand.nextInt(nextVector.size());
-			String randomWord = nextVector.get(index);
-			builder.append(randomWord);
-			builder.append(" ");
-			return randomizeRecurrent(randomWord, builder, rand);
+	private String randomizeRecurrent(String word, StringBuilder builder,
+			Random rand, int counter) {
+		String randomWord = word;
+		List<String> nextVector = word2Conseq.get(randomWord);
+		if (counter < words.length && nextVector.size() > 0) {
+			randomWord = pickNextWord(nextVector, rand);
+			builder.append(randomWord).append(" ");
+			return randomizeRecurrent(randomWord, builder, rand, ++counter);
 
+		} else {
+			return builder.toString().trim();
 		}
 
 	}
 
+	private String pickNextWord(List<String> nextWordsVector, 
+			Random rand) {
+		String randomWord;
+		int index = rand.nextInt(nextWordsVector.size());
+		randomWord = nextWordsVector.get(index);		
+		return randomWord;
+	}
+
 	private String explainWordMap() {
 		StringBuilder builder = new StringBuilder();
-		for(Entry<String, List<String>> entry : this.word2Conseq.entrySet()){
+		for (Entry<String, List<String>> entry : this.word2Conseq.entrySet()) {
 			builder.append(entry.getKey());
 			builder.append(" -> ");
-			for(String nextWord : entry.getValue()){
+			for (String nextWord : entry.getValue()) {
 				builder.append(nextWord);
 				builder.append(", ");
 			}
@@ -113,33 +127,34 @@ public class TextRandomizer {
 		return builder.toString().trim();
 	}
 
-	private static String loadText() {
-		// tylko symulowanie ³adowania
+	private static String loadDefaultText() {
 		return "Ala ma Asa As to pies Ali to Ala i Ola Ala stoi i Ola stoi i lala Oli stoi.";
 	}
-	
-	public static void main(String[] args) {		
-		String text = loadText();
+
+	public static void main(String[] args) {
+		String text;
+		if (args.length > 0) {
+			text = args[0];
+		} else {
+			text = loadDefaultText();
+		}
 		System.out.println(">>Text:<<");
 		System.out.println(text);
 		TextRandomizer textRandomizer = new TextRandomizer(text);
 		System.out.println("\n>>Mapa:<<");
 		System.out.println(textRandomizer.explainWordMap());
 		System.out.println("\n>>Losowe teksty iteracyjnie:<<");
-		for(int i = 0; i < 5; i++){
-			String newText = textRandomizer.createRandomizedText();
-			System.out.println(newText);	
+		for (int i = 0; i < 5; i++) {
+			String newText = textRandomizer.createRandomizedTextIteratively();
+			System.out.println(newText);
 		}
-		
+
 		System.out.println("\n>>Losowe teksty rekurencyjnie:<<");
-		for(int i = 0; i < 5; i++){
+		for (int i = 0; i < 5; i++) {
 			String newText = textRandomizer.createRandomizedTextRecurrently();
-			System.out.println(newText);	
+			System.out.println(newText);
 		}
-		
+
 	}
 
-	
-
-	
 }
