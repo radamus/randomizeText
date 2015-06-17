@@ -19,11 +19,11 @@ public class TextRandomizer {
 
 	public String createRandomizedText() {
 
-		return randomize(words[0], words[words.length-1]);
+		return randomize(words[0]);
 	}
 
 	private String createRandomizedTextRecurrently() {
-		return randomizeRecurrent(words[0], new StringBuilder());
+		return randomizeRecurrent(words[0], new StringBuilder(), new Random());
 	}
 	
 	/**
@@ -60,12 +60,12 @@ public class TextRandomizer {
 	 * @return string build from random pick of one of the directly subsequent
 	 *         words of a given word
 	 */
-	private String randomize(String startWord, String stopWord) {
+	private String randomize(String startWord) {
 		StringBuilder builder = new StringBuilder();
 		String randomWord = startWord;
 		List<String> nextVector = word2Conseq.get(startWord);
 		
-		while (!randomWord.equals(stopWord)) {
+		while (nextVector.size() != 0) {
 			Random rand = new Random();
 			int index = rand.nextInt(nextVector.size());
 			randomWord = nextVector.get(index);
@@ -84,17 +84,16 @@ public class TextRandomizer {
 	 * @return string build from random pick of one of the directly subsequent
 	 *         words of a given word
 	 */
-	private String randomizeRecurrent(String word, StringBuilder builder) {
+	private String randomizeRecurrent(String word, StringBuilder builder, Random rand) {
 		List<String> nextVector = word2Conseq.get(word);
 		if (nextVector.size() == 0) {
 			return builder.toString().trim();
-		} else {
-			Random rand = new Random();
+		} else {			
 			int index = rand.nextInt(nextVector.size());
 			String randomWord = nextVector.get(index);
 			builder.append(randomWord);
 			builder.append(" ");
-			return randomizeRecurrent(randomWord, builder);
+			return randomizeRecurrent(randomWord, builder, rand);
 
 		}
 
@@ -116,7 +115,7 @@ public class TextRandomizer {
 
 	private static String loadText() {
 		// tylko symulowanie ³adowania
-		return "Ala ma Asa As to pies Ali to Ala i Ola Ala stoi i Ola stoi i lala Oli stoi";
+		return "Ala ma Asa As to pies Ali to Ala i Ola Ala stoi i Ola stoi i lala Oli stoi.";
 	}
 	
 	public static void main(String[] args) {		
@@ -126,9 +125,15 @@ public class TextRandomizer {
 		TextRandomizer textRandomizer = new TextRandomizer(text);
 		System.out.println("\n>>Mapa:<<");
 		System.out.println(textRandomizer.explainWordMap());
-		System.out.println("\n>>Losowe teksty:<<");
+		System.out.println("\n>>Losowe teksty iteracyjnie:<<");
 		for(int i = 0; i < 5; i++){
 			String newText = textRandomizer.createRandomizedText();
+			System.out.println(newText);	
+		}
+		
+		System.out.println("\n>>Losowe teksty rekurencyjnie:<<");
+		for(int i = 0; i < 5; i++){
+			String newText = textRandomizer.createRandomizedTextRecurrently();
 			System.out.println(newText);	
 		}
 		
